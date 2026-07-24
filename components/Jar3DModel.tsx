@@ -30,7 +30,6 @@ export function Jar3DModel({ topLabelUrl, bottomLabelUrl }: Jar3DModelProps) {
       tex.wrapS = THREE.RepeatWrapping;
       tex.wrapT = THREE.ClampToEdgeWrapping;
       tex.repeat.set(1, 1);
-      tex.offset.x = 0.5; // Shift to align seam at the back
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.needsUpdate = true;
       setTopTexture(tex);
@@ -40,7 +39,6 @@ export function Jar3DModel({ topLabelUrl, bottomLabelUrl }: Jar3DModelProps) {
       tex.wrapS = THREE.RepeatWrapping;
       tex.wrapT = THREE.ClampToEdgeWrapping;
       tex.repeat.set(1, 1);
-      tex.offset.x = 0.5; // Shift to align seam at the back
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.needsUpdate = true;
       setBottomTexture(tex);
@@ -94,176 +92,164 @@ export function Jar3DModel({ topLabelUrl, bottomLabelUrl }: Jar3DModelProps) {
     img.src = topTextureUrl;
   }, [topTextureUrl]);
 
-  // Exact mm dimensions scaled by 0.1 for 3D world units
-  const jarRadius = 3.202; // from 201.177 circumference
-  const jarHeight = 11.75; // average of 110 and 125
-  const glassThickness = 0.1;
-  const slantFactor = -0.2342; // difference of 15mm over diameter 64.04mm
-  
-  const topLabelHeight = 6.247;
-  const bottomLabelHeight = 1.313;
-  const topFillerHeight = 3.0;
+  // User provided real jar measurements scaled by 0.1 for 3D units
+  const radius = 3.17; 
+  const capHeight = 6.021;
+  const glassHeight = 4.5;
+  const bottomHeight = 1.3;
+  const totalHeight = capHeight + glassHeight + bottomHeight;
 
-  const { glassGeo, coffeeGeo, topLabelGeo, bottomLabelGeo, topFillerGeo } = useMemo(() => {
-    // Top label with slanted top
-    const topGeo = new THREE.CylinderGeometry(jarRadius + 0.01, jarRadius + 0.01, topLabelHeight, 64, 1, true);
-    const topPositions = topGeo.attributes.position;
-    for (let i = 0; i < topPositions.count; i++) {
-      const y = topPositions.getY(i);
-      if (y > 0) {
-        const z = topPositions.getZ(i);
-        topPositions.setY(i, y + z * slantFactor);
+  const slantFactor = -0.35; // Increased slant as requested
+
+  const { capGeo, topLabelGeo, glassGeo, bottomGeo, bottomLabelGeo, coffeeGeo, capLogoGeo } = useMemo(() => {
+    // Top Cap Base (uniform radius, slanted top pivoting from the back)
+    const cap = new THREE.CylinderGeometry(radius, radius, capHeight, 128, 1, false);
+    const capPos = cap.attributes.position;
+    for (let i = 0; i < capPos.count; i++) {
+      if (capPos.getY(i) > 0) {
+        // Pivot at z = -radius (back). So at back offset is 0, at front it's 2*radius*slantFactor
+        capPos.setY(i, capPos.getY(i) + (capPos.getZ(i) + radius) * slantFactor);
       }
     }
-    topGeo.computeVertexNormals();
+    cap.computeVertexNormals();
 
-    // Top label filler (slanted top, sits behind the top label to fill any transparent gap caused by pre-distortion)
-    const fillerGeo = new THREE.CylinderGeometry(jarRadius + 0.005, jarRadius + 0.005, topFillerHeight, 64, 1, true);
-    const fillerPositions = fillerGeo.attributes.position;
-    for (let i = 0; i < fillerPositions.count; i++) {
-      const y = fillerPositions.getY(i);
-      if (y > 0) {
-        const z = fillerPositions.getZ(i);
-        fillerPositions.setY(i, y + z * slantFactor);
-      }
-    }
-    fillerGeo.computeVertexNormals();
+    // Top Label (wraps around cap, straight cylinder so texture maps without distortion)
+    const topLabel = new THREE.CylinderGeometry(radius + 0.01, radius + 0.01, capHeight, 128, 1, true);
+    
+    // Middle Glass section
+    const glass = new THREE.CylinderGeometry(radius, radius, glassHeight, 128, 1, false);
+    
+    // Bottom Glass Base (black)
+    const bottom = new THREE.CylinderGeometry(radius, radius, bottomHeight, 128, 1, false);
+    // Bottom Label (wraps around bottom)
+    const bottomLabel = new THREE.CylinderGeometry(radius + 0.01, radius + 0.01, bottomHeight, 128, 1, true);
 
-    // Bottom label (flat)
-    const bottomGeo = new THREE.CylinderGeometry(jarRadius + 0.01, jarRadius + 0.01, bottomLabelHeight, 64, 1, true);
+    // Coffee inside (brown filler) extends through glass and bottom
+    const coffee = new THREE.CylinderGeometry(radius - 0.1, radius - 0.1, glassHeight + bottomHeight - 0.1, 128, 1, false);
 
-    // Glass jar (slanted top)
-    const gGeo = new THREE.CylinderGeometry(jarRadius, jarRadius, jarHeight, 64, 1, false);
-    const gPositions = gGeo.attributes.position;
-    for (let i = 0; i < gPositions.count; i++) {
-      const y = gPositions.getY(i);
-      if (y > 0) {
-        const z = gPositions.getZ(i);
-        gPositions.setY(i, y + z * slantFactor);
-      }
-    }
-    gGeo.computeVertexNormals();
+    // Cap Logo Disk
+    const logo = new THREE.CircleGeometry(radius, 128);
 
-    // Coffee contents (slanted top)
-    const cGeo = new THREE.CylinderGeometry(jarRadius - glassThickness, jarRadius - glassThickness, jarHeight * 0.95, 64, 1, false);
-    const cPositions = cGeo.attributes.position;
-    for (let i = 0; i < cPositions.count; i++) {
-      const y = cPositions.getY(i);
-      if (y > 0) {
-        const z = cPositions.getZ(i);
-        cPositions.setY(i, y + z * slantFactor);
-      }
-    }
-    cGeo.computeVertexNormals();
-
-    return {
-      glassGeo: gGeo,
-      coffeeGeo: cGeo,
-      topLabelGeo: topGeo,
-      bottomLabelGeo: bottomGeo,
-      topFillerGeo: fillerGeo
+    return { 
+      capGeo: cap, 
+      topLabelGeo: topLabel, 
+      glassGeo: glass, 
+      bottomGeo: bottom, 
+      bottomLabelGeo: bottomLabel,
+      coffeeGeo: coffee, 
+      capLogoGeo: logo 
     };
-  }, [slantFactor, topLabelHeight, bottomLabelHeight, topFillerHeight, jarRadius, jarHeight]);
+  }, [slantFactor]);
+
+  // Positions
+  const capY = totalHeight / 2 - capHeight / 2;
+  const glassY = totalHeight / 2 - capHeight - glassHeight / 2;
+  const bottomY = -totalHeight / 2 + bottomHeight / 2;
 
   // Load Cap Logo Texture (User needs to put this in public folder)
   const [logoTexture, setLogoTexture] = useState<THREE.Texture | null>(null);
+  const [coffeeTexture, setCoffeeTexture] = useState<THREE.Texture | null>(null);
+
   useEffect(() => {
-    new THREE.TextureLoader().load("/cap-logo.png", (tex) => {
+    const loader = new THREE.TextureLoader();
+    loader.load('/cap-logo.png', (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
       setLogoTexture(tex);
     });
+    
+    // Load Coffee Beans texture
+    loader.load('/coffee.png', (tex) => {
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(4, 2); // Repeat to scale the beans appropriately
+      tex.colorSpace = THREE.SRGBColorSpace;
+      setCoffeeTexture(tex);
+    });
   }, []);
-
-  // Positions
-  const topLabelYOffset = 0.45;
-  const topLabelY = (jarHeight / 2) - (topLabelHeight / 2) + topLabelYOffset; 
-  const bottomLabelY = -(jarHeight / 2) + (bottomLabelHeight / 2); // -5.875 + 0.6565 = -5.2185
-  const topFillerY = (jarHeight / 2) - (topFillerHeight / 2);
 
   return (
     <group>
-      {/* 1. Coffee Contents */}
-      <mesh position={[0, -0.1, 0]} geometry={coffeeGeo}>
-        <meshStandardMaterial color="#2a1610" roughness={0.9} />
+      {/* Top Cap (Solid Base matching label color) */}
+      <mesh position={[0, capY, 0]} geometry={capGeo}>
+        <meshStandardMaterial color={capColor} roughness={0.8} />
       </mesh>
 
-      {/* 2. Glass Jar Body */}
-      <mesh geometry={glassGeo}>
+      {/* Top Label */}
+      <mesh position={[0, capY, 0]} rotation={[0, Math.PI, 0]} geometry={topLabelGeo}>
+        <meshStandardMaterial 
+          map={topTexture}
+          roughness={0.3}
+          metalness={0.1}
+          transparent={true}
+          alphaTest={0.05}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* Cap Logo Disk */}
+      {logoTexture && (
+        <mesh 
+          // Logo must also be shifted down by radius * slantFactor to match the new pivoted top face
+          position={[0, totalHeight / 2 + radius * slantFactor + 0.01, 0]} 
+          rotation={[-Math.PI / 2 - Math.atan(slantFactor), 0, isSafari ? Math.PI / 2 : 0]} 
+          scale={[0.7, 0.7, 0.7]}
+          geometry={capLogoGeo}
+        >
+          <meshStandardMaterial 
+            map={logoTexture}
+            transparent={true}
+            roughness={0.3}
+            metalness={0.1}
+          />
+        </mesh>
+      )}
+
+      {/* Middle Glass Jar */}
+      <mesh position={[0, glassY, 0]} geometry={glassGeo}>
         <meshPhysicalMaterial 
           color="#ffffff"
           transmission={1}
           opacity={1}
           metalness={0.1}
-          roughness={0.1}
+          roughness={0}
           ior={1.5}
-          thickness={glassThickness}
+          thickness={0.2}
           transparent={true}
         />
       </mesh>
 
-      {/* Top Label Filler (Fills the transparent gap caused by pre-distorted images) */}
-      <mesh position={[0, topFillerY, 0]} geometry={topFillerGeo}>
+      {/* Coffee inside (spans both glass and bottom sections) */}
+      <mesh position={[0, -capHeight / 2, 0]} geometry={coffeeGeo}>
         <meshStandardMaterial 
-          color={capColor} 
-          roughness={0.3} 
-          metalness={0.1}
-          side={THREE.DoubleSide}
+          color={coffeeTexture ? "#ffffff" : "#5a341f"} 
+          map={coffeeTexture}
+          roughness={0.9} 
         />
       </mesh>
 
-      {/* 3. Top Label Wrap */}
-      <mesh position={[0, topLabelY, 0]} geometry={topLabelGeo}>
+      {/* Bottom Glass Base (transparent glass) */}
+      <mesh position={[0, bottomY, 0]} geometry={bottomGeo}>
+        <meshPhysicalMaterial 
+          transmission={1}
+          opacity={1}
+          metalness={0}
+          roughness={0}
+          ior={1.5}
+          color="#ffffff"
+        />
+      </mesh>
+
+      {/* Bottom Label */}
+      <mesh position={[0, bottomY, 0]} rotation={[0, Math.PI, 0]} geometry={bottomLabelGeo}>
         <meshStandardMaterial 
-          map={topTexture} 
-          roughness={0.3} 
+          map={bottomTexture}
+          roughness={0.3}
           metalness={0.1}
           transparent={true}
-          side={THREE.DoubleSide}
           alphaTest={0.05}
-        />
-      </mesh>
-
-      {/* 4. Bottom Label Wrap */}
-      <mesh position={[0, bottomLabelY, 0]} geometry={bottomLabelGeo}>
-        <meshStandardMaterial 
-          map={bottomTexture} 
-          roughness={0.3} 
-          metalness={0.1}
-          transparent={true}
           side={THREE.DoubleSide}
         />
       </mesh>
-
-      {/* 5. The Cap (Top Face of the slanted label) */}
-      <group 
-        position={[0, (jarHeight / 2) + 0.01, 0]} 
-        rotation={[-Math.PI / 2 - Math.atan(slantFactor), 0, 0]}
-        scale={[1, Math.sqrt(1 + slantFactor * slantFactor), 1]}
-      >
-        {/* Cap Base */}
-        <mesh>
-          <circleGeometry args={[jarRadius + 0.015, 64]} />
-          <meshStandardMaterial 
-            color={capColor} // Extracted from label
-            roughness={0.8} 
-            metalness={0.1} 
-          />
-        </mesh>
-        
-        {/* Cap Logo */}
-        {logoTexture && (
-          <mesh position={[0, 0, 0.01]} rotation={[0, 0, isSafari ? Math.PI / 2 : 0]}>
-            {/* Plane for the logo. Conditional rotation and aspect ratio to fix Safari/Chrome EXIF differences */}
-            <planeGeometry args={isSafari ? [jarRadius * 1.0, jarRadius * 1.5] : [jarRadius * 1.5, jarRadius * 1.0]} />
-            <meshStandardMaterial 
-              map={logoTexture} 
-              transparent={true}
-              roughness={0.3}
-              metalness={0.1}
-            />
-          </mesh>
-        )}
-      </group>
     </group>
   );
 }
