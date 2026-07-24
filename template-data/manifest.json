@@ -1,0 +1,42 @@
+[
+  {
+    "id": "round-jar",
+    "name": "Round Glass Jar",
+    "category": "jar"
+  },
+  {
+    "id": "premium-jar",
+    "name": "Premium Glass Jar",
+    "category": "jar"
+  },
+  {
+    "id": "v-jar",
+    "name": "V Jar",
+    "category": "jar"
+  },
+  {
+    "id": "speciality-jar",
+    "name": "Speciality Jar",
+    "category": "jar"
+  },
+  {
+    "id": "sachet",
+    "name": "Sachet",
+    "category": "sachet"
+  },
+  {
+    "id": "bottle",
+    "name": "Bottle",
+    "category": "bottle"
+  },
+  {
+    "id": "box",
+    "name": "Box",
+    "category": "box"
+  },
+  {
+    "id": "pouch",
+    "name": "Pouch",
+    "category": "pouch"
+  }
+]

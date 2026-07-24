@@ -1,0 +1,22 @@
+{
+  "id": "custom-box",
+  "name": "Coffee Box",
+  "description": "Custom coffee box mockup.",
+  "category": "box",
+  "image": "/templates/custom-box.png",
+  "canvas": {
+    "width": 1024,
+    "height": 710
+  },
+  "labelArea": {
+    "x": 330,
+    "y": 180,
+    "width": 360,
+    "height": 450,
+    "rotation": 0,
+    "borderRadius": 0,
+    "opacity": 0.95,
+    "applyShading": true,
+    "fit": "cover"
+  }
+}

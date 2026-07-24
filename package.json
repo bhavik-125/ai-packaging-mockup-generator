@@ -1,0 +1,47 @@
+{
+  "name": "ai-packaging-mockup-generator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generate realistic packaging mockups from a single product label — round jars, bottles, boxes, pouches, sachets and more. Runs entirely inside Next.js, deployable on the Vercel Hobby plan.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "generate-templates": "tsx scripts/generate-templates.ts"
+  },
+  "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
+    "@vercel/blob": "^2.6.1",
+    "clsx": "^2.1.1",
+    "jimp": "^0.22.12",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.469.0",
+    "next": "15.5.20",
+    "pdf-lib": "^1.17.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-dropzone": "^14.3.5",
+    "sharp": "^0.33.5",
+    "tailwind-merge": "^2.6.0",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.4",
+    "@types/react-dom": "^19.0.2",
+    "@types/three": "^0.185.1",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.18.0",
+    "eslint-config-next": "15.5.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  }
+}

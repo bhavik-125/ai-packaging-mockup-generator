@@ -1,0 +1,22 @@
+{
+  "id": "custom-jar",
+  "name": "Coffee Jar",
+  "description": "Custom coffee jar mockup.",
+  "category": "jar",
+  "image": "/templates/custom-jar.jpg",
+  "canvas": {
+    "width": 925,
+    "height": 1024
+  },
+  "labelArea": {
+    "x": 30,
+    "y": 320,
+    "width": 400,
+    "height": 480,
+    "rotation": 0,
+    "borderRadius": 0,
+    "opacity": 0.95,
+    "applyShading": true,
+    "fit": "cover"
+  }
+}
